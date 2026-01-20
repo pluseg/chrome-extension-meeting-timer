@@ -147,6 +147,9 @@
 
     state.isRunning = true;
     state.isPaused = false;
+    state.totalMeetingTime = 0;
+
+    updateDisplay();
 
     // Start countdown
     countdownInterval = setInterval(() => {
@@ -159,6 +162,7 @@
         countdownDisplay.classList.add('time-warning');
       }
     }, 1000);
+
 
     // Start total time
     totalTimeInterval = setInterval(() => {
@@ -197,14 +201,12 @@
   // Lap functionality
   function addLap() {
     const lapTime = state.maxTime - state.currentTime;
-    const lapNumber = state.laps.length + 1;
     const lap = {
       id: Date.now(),
       duration: lapTime,
-      timestamp: new Date().toLocaleTimeString(),
-      name: `Speaker ${lapNumber}`
+      timestamp: new Date().toLocaleTimeString()
     };
-    
+
     // Add to beginning (newest first)
     state.laps.unshift(lap);
 
@@ -226,56 +228,30 @@
     window.meetingTimerInjected = false;
   }
 
-  // Update lap name
-  function updateLapName(lapId, newName) {
-    const lap = state.laps.find(l => l.id === lapId);
-    if (lap) {
-      lap.name = newName || `Speaker ${state.laps.indexOf(lap) + 1}`;
-      renderLaps();
-    }
-  }
-
   // Render laps list
   function renderLaps() {
     if (state.laps.length === 0) {
       lapsContainer.innerHTML = '';
       return;
     }
-    
+
     lapsContainer.innerHTML = `
       <div class="laps-header">Speaker Times</div>
       ${state.laps.map((lap, index) => `
         <div class="lap-item" data-lap-id="${lap.id}">
-          <input type="text" class="lap-name-input" data-lap-id="${lap.id}" value="${lap.name}" placeholder="Speaker name">
+          <span class="lap-number">Speaker ${index + 1}</span>
           <span class="lap-time">${formatTime(lap.duration)}</span>
           <button class="lap-remove" data-lap-id="${lap.id}">×</button>
         </div>
       `).join('')}
     `;
-    
+
     // Add remove handlers
     lapsContainer.querySelectorAll('.lap-remove').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
         const lapId = parseInt(btn.dataset.lapId);
         removeLap(lapId);
-      });
-    });
-    
-    // Add name edit handlers
-    lapsContainer.querySelectorAll('.lap-name-input').forEach(input => {
-      input.addEventListener('change', (e) => {
-        e.stopPropagation();
-        const lapId = parseInt(input.dataset.lapId);
-        updateLapName(lapId, input.value.trim());
-      });
-      
-      input.addEventListener('click', (e) => {
-        e.stopPropagation();
-      });
-      
-      input.addEventListener('focus', (e) => {
-        e.target.select();
       });
     });
   }

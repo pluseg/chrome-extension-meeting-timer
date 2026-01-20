@@ -4,7 +4,6 @@
   right: 20px;
   width: 320px;
   min-width: 320px;
-  min-height: 245px;
 
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border-radius: 12px;
@@ -15,6 +14,7 @@
   user-select: none;
   backdrop-filter: blur(10px);
   /* Disabled the feature, because it doesn't match with auto increasing height. */
+  /* min-height: 245px; */
   /* resize: both; */
   overflow: auto;
 }
@@ -138,7 +138,7 @@
 
 .time-input {
   width: 45px;
-  height: 36px;
+  height: 28px;
   font-size: 18px;
   font-weight: 600;
   text-align: center;
@@ -148,6 +148,7 @@
   color: white;
   font-family: 'Courier New', monospace;
   padding: 0;
+  margin: -10px 0;
 }
 
 .time-separator {
