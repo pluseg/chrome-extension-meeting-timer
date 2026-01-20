@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Meeting Timer - Speaker Tracker",
+  "name": "Daily Standup Timer — Scrum & Meeting Tracker",
   "version": "1.0.0",
   "description": "Track speaking time for each participant with countdown timer and lap tracking",
   "permissions": [
