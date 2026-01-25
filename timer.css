@@ -486,6 +486,16 @@
   white-space: nowrap;
 }
 
+#meeting-timer-extension .lap-time.overdue {
+  color: #ffa94d;
+}
+
+#meeting-timer-extension .lap-time.overdue::before {
+  content: '⚠️ ';
+  font-size: 12px;
+  margin-right: 2px;
+}
+
 #meeting-timer-extension .lap-remove {
   background: rgba(255, 107, 107, 0.8);
   border: none;

@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Daily Standup Timer — Scrum & Meeting Tracker",
-  "version": "1.0",
-  "description": "Track Daily standups with per-speaker timers, lap tracking, and time logs — right on any webpage (JIRA, YouTrack, Redmine).",
+  "name": "Swift Standup — Per-Speaker Timer",
+  "version": "1.1",
+  "description": "Stop long meetings with gentle social pressure. A floating per-speaker timer for focused, time-boxed standups on any webpage.",
   "permissions": [
     "storage",
     "activeTab",

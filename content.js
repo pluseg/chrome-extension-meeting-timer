@@ -35,9 +35,17 @@
     chrome.storage.sync.get(['maxTime'], (result) => {
       if (result.maxTime) {
         state.maxTime = result.maxTime;
-        state.currentTime = result.maxTime;
+        // Only update current time if the timer is idle (not running or paused)
+        // and doesn't already have a valid session value
+        if (!state.isRunning && !state.isPaused) {
+          const savedState = sessionStorage.getItem(SESSION_STORAGE_KEY);
+          if (!savedState) {
+            state.currentTime = result.maxTime;
+          }
+        }
       }
       updateDisplay();
+      renderLaps();
     });
   }
 
@@ -69,7 +77,7 @@
 
       const parsedState = JSON.parse(savedState);
       const now = Date.now();
-      const elapsedMs = now - (parsedState.lastUpdateTimestamp || now);
+      const elapsedMs = Math.max(0, now - (parsedState.lastUpdateTimestamp || now));
       const elapsedSeconds = Math.floor(elapsedMs / 1000);
 
       // Restore basic state
@@ -208,23 +216,18 @@
   }
 
   // Start timer
-  function startTimer() {
+  function startTimer(isResume = false) {
     if (state.isRunning) return;
 
-    // Clear laps if reset was pressed
+    // Clear laps and total time only if starting a NEW meeting (after Stop was pressed)
     if (state.shouldClearLapsOnStart) {
       state.laps = [];
+      state.totalMeetingTime = 0;
       state.shouldClearLapsOnStart = false;
       renderLaps();
     }
 
     state.isRunning = true;
-
-    // Only reset total time if we're starting fresh (not resuming from pause)
-    if (!state.isPaused) {
-      state.totalMeetingTime = 0;
-    }
-
     state.isPaused = false;
 
     updateDisplay();
@@ -343,7 +346,7 @@
               <button class="lap-cancel-btn" data-lap-id="${lap.id}" title="Cancel">×</button>
             </div>
           </div>
-          <span class="lap-time">${formatTime(lap.duration)}</span>
+          <span class="lap-time ${lap.duration > state.maxTime ? 'overdue' : ''}">${formatTime(lap.duration)}</span>
           <button class="lap-remove" data-lap-id="${lap.id}">×</button>
         </div>
       `).join('')}
@@ -493,6 +496,7 @@
     }
     state.currentTime = state.maxTime;
     updateDisplay();
+    renderLaps();
     saveSettings();
     saveState(); // Save state after updating max time
   }
@@ -616,7 +620,7 @@
 
   // If timer was running before reload, resume it
   if (restoreResult && restoreResult.shouldResume) {
-    startTimer();
+    startTimer(true);
   }
 
 
