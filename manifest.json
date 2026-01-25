@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Daily Standup Timer — Scrum & Meeting Tracker",
-  "version": "1.0.0",
-  "description": "Track speaking time for each participant with countdown timer and lap tracking",
+  "version": "1.0",
+  "description": "Track Daily standups with per-speaker timers, lap tracking, and time logs — right on any webpage (JIRA, YouTrack, Redmine).",
   "permissions": [
     "storage",
     "activeTab",
