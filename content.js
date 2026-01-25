@@ -5,6 +5,9 @@
   if (window.meetingTimerInjected) return;
   window.meetingTimerInjected = true;
 
+  // Session storage key (unique per tab)
+  const SESSION_STORAGE_KEY = 'meetingTimerState';
+
   // Timer state
   let state = {
     currentTime: 5 * 60, // 5 minutes in seconds
@@ -13,7 +16,8 @@
     isPaused: false,
     isRunning: false,
     shouldClearLapsOnStart: false,
-    laps: []
+    laps: [],
+    lastUpdateTimestamp: null // Track when state was last updated (for calculating elapsed time)
   };
 
   let countdownInterval = null;
@@ -43,6 +47,75 @@
       maxTime: state.maxTime
     });
   }
+
+  // Save state to sessionStorage (persists only for this tab)
+  function saveState() {
+    try {
+      const stateToSave = {
+        ...state,
+        lastUpdateTimestamp: Date.now()
+      };
+      sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(stateToSave));
+    } catch (e) {
+      console.error('Failed to save timer state:', e);
+    }
+  }
+
+  // Restore state from sessionStorage
+  function restoreState() {
+    try {
+      const savedState = sessionStorage.getItem(SESSION_STORAGE_KEY);
+      if (!savedState) return false;
+
+      const parsedState = JSON.parse(savedState);
+      const now = Date.now();
+      const elapsedMs = now - (parsedState.lastUpdateTimestamp || now);
+      const elapsedSeconds = Math.floor(elapsedMs / 1000);
+
+      // Restore basic state
+      state.maxTime = parsedState.maxTime || state.maxTime;
+      state.laps = parsedState.laps || [];
+      state.shouldClearLapsOnStart = parsedState.shouldClearLapsOnStart || false;
+
+      // If timer was running, calculate elapsed time
+      if (parsedState.isRunning) {
+        state.currentTime = parsedState.currentTime - elapsedSeconds;
+        state.totalMeetingTime = parsedState.totalMeetingTime + elapsedSeconds;
+        state.isRunning = false; // We'll restart it after restoring
+        state.isPaused = false;
+
+        // Mark that we need to auto-resume
+        return { shouldResume: true };
+      } else if (parsedState.isPaused) {
+        // If paused, restore exact state without time adjustment
+        state.currentTime = parsedState.currentTime;
+        state.totalMeetingTime = parsedState.totalMeetingTime;
+        state.isPaused = true;
+        state.isRunning = false;
+        return { shouldResume: false };
+      } else {
+        // Timer was idle
+        state.currentTime = parsedState.currentTime || state.maxTime;
+        state.totalMeetingTime = parsedState.totalMeetingTime || 0;
+        state.isPaused = false;
+        state.isRunning = false;
+        return { shouldResume: false };
+      }
+    } catch (e) {
+      console.error('Failed to restore timer state:', e);
+      return false;
+    }
+  }
+
+  // Clear state from sessionStorage
+  function clearState() {
+    try {
+      sessionStorage.removeItem(SESSION_STORAGE_KEY);
+    } catch (e) {
+      console.error('Failed to clear timer state:', e);
+    }
+  }
+
 
   // Create timer UI
   const timerContainer = document.createElement('div');
@@ -146,8 +219,13 @@
     }
 
     state.isRunning = true;
+
+    // Only reset total time if we're starting fresh (not resuming from pause)
+    if (!state.isPaused) {
+      state.totalMeetingTime = 0;
+    }
+
     state.isPaused = false;
-    state.totalMeetingTime = 0;
 
     updateDisplay();
 
@@ -155,6 +233,7 @@
     countdownInterval = setInterval(() => {
       state.currentTime--;
       updateDisplay();
+      saveState(); // Save state on each tick
 
       // Optional: Alert when time is up
       if (state.currentTime === 0) {
@@ -171,6 +250,7 @@
     }, 1000);
 
     updateButtons();
+    saveState(); // Save initial state
   }
 
   // Pause timer
@@ -182,6 +262,7 @@
     clearInterval(totalTimeInterval);
 
     updateButtons();
+    saveState(); // Save paused state
   }
 
   // Stop timer (don't clear total time or laps immediately)
@@ -196,6 +277,7 @@
 
     updateDisplay();
     updateButtons();
+    saveState(); // Save stopped state
   }
 
   // Lap functionality
@@ -204,7 +286,8 @@
     const lap = {
       id: Date.now(),
       duration: lapTime,
-      timestamp: new Date().toLocaleTimeString()
+      timestamp: new Date().toLocaleTimeString(),
+      speakerName: `Speaker ${state.laps.length + 1}`
     };
 
     // Add to beginning (newest first)
@@ -214,18 +297,31 @@
     state.currentTime = state.maxTime;
     updateDisplay();
     renderLaps();
+    saveState(); // Save state with new lap
   }
 
   // Remove lap
   function removeLap(lapId) {
     state.laps = state.laps.filter(lap => lap.id !== lapId);
     renderLaps();
+    saveState(); // Save state after removing lap
   }
 
   // Close/remove timer from page
   function closeTimer() {
+    clearState(); // Clear session storage when explicitly closing
     timerContainer.remove();
     window.meetingTimerInjected = false;
+  }
+
+  // Update speaker name
+  function updateSpeakerName(lapId, newName) {
+    const lap = state.laps.find(l => l.id === lapId);
+    if (lap) {
+      lap.speakerName = newName || lap.speakerName;
+      renderLaps();
+      saveState(); // Save state after updating speaker name
+    }
   }
 
   // Render laps list
@@ -239,12 +335,66 @@
       <div class="laps-header">Speaker Times</div>
       ${state.laps.map((lap, index) => `
         <div class="lap-item" data-lap-id="${lap.id}">
-          <span class="lap-number">Speaker ${index + 1}</span>
+          <div class="lap-name-container">
+            <span class="lap-number" data-lap-id="${lap.id}">${lap.speakerName || `Speaker ${index + 1}`}</span>
+            <div class="lap-edit-controls" data-lap-id="${lap.id}" style="display: none;">
+              <input type="text" class="lap-name-input" data-lap-id="${lap.id}" value="${lap.speakerName || `Speaker ${index + 1}`}" />
+              <button class="lap-save-btn" data-lap-id="${lap.id}" title="Save">✓</button>
+              <button class="lap-cancel-btn" data-lap-id="${lap.id}" title="Cancel">×</button>
+            </div>
+          </div>
           <span class="lap-time">${formatTime(lap.duration)}</span>
           <button class="lap-remove" data-lap-id="${lap.id}">×</button>
         </div>
       `).join('')}
     `;
+
+    // Add speaker name click handlers
+    lapsContainer.querySelectorAll('.lap-number').forEach(span => {
+      span.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const lapId = parseInt(span.dataset.lapId);
+        enterEditMode(lapId);
+      });
+    });
+
+    // Add save button handlers
+    lapsContainer.querySelectorAll('.lap-save-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const lapId = parseInt(btn.dataset.lapId);
+        const input = lapsContainer.querySelector(`.lap-name-input[data-lap-id="${lapId}"]`);
+        updateSpeakerName(lapId, input.value.trim());
+      });
+    });
+
+    // Add cancel button handlers
+    lapsContainer.querySelectorAll('.lap-cancel-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const lapId = parseInt(btn.dataset.lapId);
+        exitEditMode(lapId);
+      });
+    });
+
+    // Add input enter key handler
+    lapsContainer.querySelectorAll('.lap-name-input').forEach(input => {
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.stopPropagation();
+          const lapId = parseInt(input.dataset.lapId);
+          updateSpeakerName(lapId, input.value.trim());
+        } else if (e.key === 'Escape') {
+          e.stopPropagation();
+          const lapId = parseInt(input.dataset.lapId);
+          exitEditMode(lapId);
+        }
+      });
+
+      input.addEventListener('click', (e) => {
+        e.stopPropagation();
+      });
+    });
 
     // Add remove handlers
     lapsContainer.querySelectorAll('.lap-remove').forEach(btn => {
@@ -254,6 +404,37 @@
         removeLap(lapId);
       });
     });
+  }
+
+  // Enter edit mode for a lap
+  function enterEditMode(lapId) {
+    const lapItem = lapsContainer.querySelector(`.lap-item[data-lap-id="${lapId}"]`);
+    if (!lapItem) return;
+
+    const nameSpan = lapItem.querySelector('.lap-number');
+    const editControls = lapItem.querySelector('.lap-edit-controls');
+    const input = lapItem.querySelector('.lap-name-input');
+
+    nameSpan.style.display = 'none';
+    editControls.style.display = 'flex';
+
+    // Focus and select the input
+    setTimeout(() => {
+      input.focus();
+      input.select();
+    }, 0);
+  }
+
+  // Exit edit mode for a lap
+  function exitEditMode(lapId) {
+    const lapItem = lapsContainer.querySelector(`.lap-item[data-lap-id="${lapId}"]`);
+    if (!lapItem) return;
+
+    const nameSpan = lapItem.querySelector('.lap-number');
+    const editControls = lapItem.querySelector('.lap-edit-controls');
+
+    nameSpan.style.display = 'inline-block';
+    editControls.style.display = 'none';
   }
 
   // Update button states
@@ -313,6 +494,7 @@
     state.currentTime = state.maxTime;
     updateDisplay();
     saveSettings();
+    saveState(); // Save state after updating max time
   }
 
   timeInputMinutes.addEventListener('change', (e) => {
@@ -423,7 +605,19 @@
 
   // Initialize
   loadSettings();
+
+  // Try to restore state from sessionStorage
+  const restoreResult = restoreState();
+
+  // Update display and buttons
   updateDisplay();
   updateButtons();
+  renderLaps(); // Render any restored laps
+
+  // If timer was running before reload, resume it
+  if (restoreResult && restoreResult.shouldResume) {
+    startTimer();
+  }
+
 
 })();

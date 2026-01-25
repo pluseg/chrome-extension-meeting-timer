@@ -6,6 +6,7 @@ A Chrome extension for tracking speaker time during meetings with countdown time
 
 - ⏱️ **Editable Countdown Timer**: Customize time per speaker (default 5 minutes)
 - 💾 **Persistent Settings**: Timer duration saved across sessions and pages
+- 🔄 **Session Persistence**: Timer state survives page reloads (tab-specific)
 - 📊 **Total Meeting Time**: Tracks the overall meeting duration
 - 🏃 **Lap Tracking**: Record each speaker's time separately
 - 👁️ **Show/Hide**: Timer is hidden by default - only appears when you need it
@@ -13,6 +14,7 @@ A Chrome extension for tracking speaker time during meetings with countdown time
 - ⏯️ **Smart Controls**: Single Start/Pause/Resume button with Lap and Reset
 - 🎨 **Modern Design**: Beautiful gradient UI with smooth animations
 - ❌ **Remove Laps**: Hover over any lap to remove it
+
 
 ## Installation
 
@@ -110,6 +112,38 @@ chrome-extension-timer/
 - **Injection**: Content script runs on all URLs
 - **Compatibility**: Chrome, Edge, and other Chromium-based browsers
 
+## Session Persistence
+
+The timer now uses `sessionStorage` to persist state across page reloads **within the same browser tab**:
+
+### What Gets Saved
+- Timer running/paused state
+- Current countdown time
+- Total meeting time
+- All laps with speaker names and durations
+- Max time per speaker setting
+
+### How It Works
+- State is automatically saved every second while the timer is running
+- When you reload the page, the timer calculates elapsed time and continues
+- If the timer was running, it auto-resumes with the correct time
+- If paused, it restores the exact state without time adjustment
+
+### Tab-Specific Behavior
+- ✅ **Same Tab, Reload Page**: Timer continues with elapsed time accounted for
+- ✅ **Same Tab, Navigate to Different URL**: Timer state persists
+- ✅ **New Tab**: Fresh timer (each tab is independent)
+- ✅ **Close Tab**: State is cleared automatically
+- ✅ **Click Close Button**: State is cleared explicitly
+
+### Example Scenario
+1. Start a timer at 5:00 minutes
+2. Let it run down to 3:30
+3. Reload the page after 10 seconds
+4. Timer resumes at 3:20 (accounting for the 10 seconds during reload)
+5. Total meeting time continues counting correctly
+
+
 ## Tips
 
 - The timer starts hidden by default - no distraction on regular browsing
@@ -129,14 +163,19 @@ chrome-extension-timer/
 **Can't click buttons on the page?**
 - Move the timer by dragging it to a different location
 
-**Timer resets when navigating?**
-- This is expected behavior - timer state (running/paused) resets on page load
-- However, your settings (max time, visibility) are preserved
+**Timer state after page reload?**
+- ✅ Timer now persists across page reloads within the same tab!
+- If the timer was running, it will auto-resume with the correct elapsed time
+- If paused, it will remain paused with the exact same time
+- All laps and speaker names are preserved
+- Each browser tab has its own independent timer state
+- Closing the tab or clicking the Close button clears the state
 
 **Want to change the time limit mid-meeting?**
 - You need to click Reset first to stop the timer
 - Then you can edit the time input field
 - Click Start to begin with the new duration
+
 
 ## Development
 

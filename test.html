@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Timer Extension Test Page</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+    }
+    
+    .container {
+      background: white;
+      border-radius: 12px;
+      padding: 30px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    }
+    
+    h1 {
+      color: #333;
+      margin-bottom: 10px;
+    }
+    
+    .subtitle {
+      color: #666;
+      margin-bottom: 30px;
+    }
+    
+    .test-section {
+      background: #f8f9fa;
+      border-left: 4px solid #667eea;
+      padding: 20px;
+      margin: 20px 0;
+      border-radius: 4px;
+    }
+    
+    .test-section h2 {
+      margin-top: 0;
+      color: #667eea;
+      font-size: 1.2em;
+    }
+    
+    .test-steps {
+      list-style: none;
+      padding: 0;
+    }
+    
+    .test-steps li {
+      padding: 10px 0;
+      border-bottom: 1px solid #e0e0e0;
+    }
+    
+    .test-steps li:last-child {
+      border-bottom: none;
+    }
+    
+    .test-steps li::before {
+      content: "✓ ";
+      color: #667eea;
+      font-weight: bold;
+      margin-right: 8px;
+    }
+    
+    .note {
+      background: #fff3cd;
+      border: 1px solid #ffc107;
+      border-radius: 4px;
+      padding: 15px;
+      margin: 20px 0;
+    }
+    
+    .note strong {
+      color: #856404;
+    }
+    
+    code {
+      background: #e9ecef;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-family: 'Courier New', monospace;
+      font-size: 0.9em;
+    }
+    
+    .link-section {
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 2px solid #e0e0e0;
+    }
+    
+    .link-section a {
+      display: inline-block;
+      margin: 10px 10px 10px 0;
+      padding: 10px 20px;
+      background: #667eea;
+      color: white;
+      text-decoration: none;
+      border-radius: 6px;
+      transition: background 0.3s;
+    }
+    
+    .link-section a:hover {
+      background: #5568d3;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎯 Meeting Timer Extension - Test Page</h1>
+    <p class="subtitle">Test the session storage persistence feature</p>
+    
+    <div class="test-section">
+      <h2>📋 How to Test Session Storage</h2>
+      <ol class="test-steps">
+        <li>Click the extension icon to open the timer</li>
+        <li>Start the timer and let it run for a few seconds</li>
+        <li>Add some laps (speaker times)</li>
+        <li>Reload this page (Cmd+R or F5)</li>
+        <li>The timer should continue running with the correct elapsed time!</li>
+      </ol>
+    </div>
+    
+    <div class="test-section">
+      <h2>🧪 Test Scenarios</h2>
+      <ul class="test-steps">
+        <li><strong>Running Timer:</strong> Timer continues after reload, accounting for elapsed time</li>
+        <li><strong>Paused Timer:</strong> Timer stays paused with exact same time</li>
+        <li><strong>Laps Preserved:</strong> All speaker times and names are restored</li>
+        <li><strong>New Tab:</strong> Opening a new tab shows a fresh timer</li>
+        <li><strong>Close Button:</strong> Clicking close clears the state</li>
+        <li><strong>URL Change:</strong> Navigate to another page and back - timer continues</li>
+      </ul>
+    </div>
+    
+    <div class="note">
+      <strong>💡 Note:</strong> The timer state is saved in <code>sessionStorage</code>, which means:
+      <ul>
+        <li>State persists only for this specific browser tab</li>
+        <li>Each tab has its own independent timer</li>
+        <li>State is cleared when you close the tab</li>
+        <li>State is cleared when you click the "Close" button</li>
+      </ul>
+    </div>
+    
+    <div class="link-section">
+      <h3>Navigate to test URL changes:</h3>
+      <a href="https://www.google.com">Go to Google</a>
+      <a href="https://www.github.com">Go to GitHub</a>
+      <a href="#" onclick="window.location.reload(); return false;">Reload Page</a>
+    </div>
+    
+    <div style="margin-top: 30px; padding: 20px; background: #e7f3ff; border-radius: 8px;">
+      <h3 style="margin-top: 0; color: #0066cc;">🔍 Technical Details</h3>
+      <p>The extension now uses <code>sessionStorage</code> to persist state across page reloads:</p>
+      <ul>
+        <li>State is saved every second while timer is running</li>
+        <li>Timestamp is recorded to calculate elapsed time during reload</li>
+        <li>On page load, state is restored and timer auto-resumes if it was running</li>
+        <li>Explicitly closing the timer clears the session storage</li>
+      </ul>
+    </div>
+  </div>
+</body>
+</html>
